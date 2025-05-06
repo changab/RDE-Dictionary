@@ -173,6 +173,11 @@ def get_num_bytes_and_padding(value):
 
     return num_bytes_for_value, is_padding_required
 
+def bej_pack_v_integer_fixed_bytes(stream, value, num_bytes_for_value):
+    # pack the value
+    bytes = value.to_bytes(8, 'little')
+    num_bytes_packed = stream.write(bytes[:num_bytes_for_value])
+    return num_bytes_packed
 
 def bej_pack_v_integer(stream, value, num_bytes_for_value, is_padding_required):
     # pack the value
@@ -185,14 +190,25 @@ def bej_pack_v_integer(stream, value, num_bytes_for_value, is_padding_required):
     return num_bytes_packed
 
 
-def bej_pack_sflv_integer(stream, seq_num, value, format_flags):
-    num_bytes_for_value, is_padding_required = get_num_bytes_and_padding(value)
+def bej_pack_sflv_integer(stream, seq_num, value, format_flags, integer_byte_count = 0):
+    # if integer_byte_count == 0, then there is no byte count specified for this value.
+    # Otherwise, the value will be encode as the number of byte count specified.
+    # For example, if the byte count is 4 and the value is 0x30. Then bytes encoded
+    # for bej_integer is 0x00000030. This is to support the fixed byte length of interger value.
+    if integer_byte_count != 0:
+        is_padding_required = 0
+        num_bytes_for_value = integer_byte_count
+    else:
+        num_bytes_for_value, is_padding_required = get_num_bytes_and_padding(value)
 
     num_bytes_packed = bej_pack_sfl(stream, seq_num, BEJ_FORMAT_INTEGER,
                                     num_bytes_for_value+1 if is_padding_required else num_bytes_for_value, format_flags)
 
     # pack the value
-    num_bytes_packed += bej_pack_v_integer(stream, value, num_bytes_for_value, is_padding_required)
+    if integer_byte_count != 0:
+        num_bytes_packed += bej_pack_v_integer_fixed_bytes (stream, value, num_bytes_for_value)
+    else:
+        num_bytes_packed += bej_pack_v_integer(stream, value, num_bytes_for_value, is_padding_required)
 
     return num_bytes_packed
 
@@ -407,7 +423,7 @@ def bej_encode_sflv(output_stream, schema_dict, annot_dict, dict_to_use, dict_en
         bej_pack_sflv_string(output_stream, seq, json_value, format_flags)
 
     elif format == BEJ_FORMAT_INTEGER and isinstance(json_value, int):
-        bej_pack_sflv_integer(output_stream, seq, json_value, format_flags)
+        bej_pack_sflv_integer(output_stream, seq, json_value, format_flags, dict_entry [DICTIONARY_ENTRY_CHILD_COUNT])
 
     elif format == BEJ_FORMAT_REAL and isinstance(json_value, (float, int)):
         bej_pack_sflv_real(output_stream, seq, json_value, format_flags)
