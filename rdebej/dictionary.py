@@ -113,9 +113,14 @@ def get_primitive_type(property_type):
         primitive_type = m.group(1)
         if primitive_type == "DateTimeOffset" or primitive_type == "Duration" or primitive_type == "TimeOfDay" or primitive_type == "Guid":
             primitive_type = 'String'
-        elif ((primitive_type == "SByte") or (primitive_type == "Int16") or (primitive_type == "Int32") or
-              (primitive_type == "Int64")):
-            primitive_type = 'Integer'
+        elif ((primitive_type == "SByte") or (primitive_type == "Byte")):
+            primitive_type = "Integer8"
+        elif (primitive_type == "Int16"):
+            primitive_type = "Integer16"
+        elif (primitive_type == "Int32"):
+            primitive_type = "Integer32"
+        elif (primitive_type == "Int64"):
+            primitive_type = 'Integer64'
         elif primitive_type == "Decimal":
             primitive_type = 'Real'
         elif primitive_type == "PrimitiveType":
@@ -749,6 +754,18 @@ def print_table_data(data):
 
 
 def add_dictionary_row(dictionary, index, seq_num, format, format_flags, field_string, child_count, offset, excerpts):
+    if format == "Integer8":
+        child_count = 1
+        format = "Integer"
+    elif format == "Integer16":
+        child_count = 2
+        format = "Integer"
+    elif format == "Integer32":
+        child_count = 4
+        format = "Integer"
+    elif format == "Integer64":
+        child_count = 8
+        format = "Integer"
     dictionary.append([index, seq_num, format, format_flags, field_string, child_count, offset, excerpts])
 
 
